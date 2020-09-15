@@ -2179,6 +2179,47 @@ static void usage() {
   fprintf(stderr,"Usage: crunch <min> <max> [options]\n");
   fprintf(stderr,"where min and max are numbers\n\n");
   fprintf(stderr,"Please refer to the man page for instructions and examples on how to use crunch.\n");
+
+  printf("usage: ./crunch <from-len> <to-len> [-f <path to charset.lst> charset-name] [-o wordlist.txt or START] [-t [FIXED]@@@@] [-s startblock]\n\n");
+  printf("  Options:\n");
+  printf("  -b          : maximum bytes to write to output file. depending on the blocksize\n");
+  printf("                files may be some bytes smaller than specified but never bigger.\n");
+  printf("  -c          : numbers of lines to write to output file, only works if \"-o START\"\n");
+  printf("                is used, eg: 60  The output files will be in the format of starting\n");
+  printf("                letter - ending letter for example:\n");
+  printf("                crunch 1 5 -f /pentest/password/charset.lst mixalpha -o START -c 52\n");
+  printf("                will result in 2 files: a-7.txt and 8-\\ .txt  The reason for the\n");
+  printf("                slash in the second filename is the ending character is space and\n");
+  printf("                ls has to escape it to print it.  Yes you will need to put in\n");
+  printf("                the \\ when specifying the filename.\n");
+  printf("  -d          : specify -d [n][@,%%^] to suppress generation of strings with more\n");
+  printf("                than [n] adjacent duplicates from the given character set. For example:\n");
+  printf("                ./crunch 5 5 -d 2@\n");
+  printf("                Will print all combinations with 2 or less adjacent lowercase duplicates.\n");
+  printf("  -e          : tells crunch to stop generating words at string.  Useful when piping\n");
+  printf("                crunch to another program.\n");
+  printf("  -f          : path to a file containing a list of character sets, eg: charset.lst\n");
+  printf("                name of the character set in the above file eg:\n");
+  printf("                mixalpha-numeric-all-space\n");
+  printf("  -i          : inverts the output so the first character will change very often\n");
+  printf("  -l          : literal characters to use in -t @,%%^\n");
+  printf("  -o          : allows you to specify the file to write the output to, eg:\n");
+  printf("                wordlist.txt\n");
+  printf("  -p          : prints permutations without repeating characters.  This option\n");
+  printf("                CANNOT be used with -s.  It also ignores min and max lengths.\n");
+  printf("  -q          : Like the -p option except it reads the strings from the specified\n");
+  printf("                file.  It CANNOT be used with -s.  It also ignores min and max.\n");
+  printf("  -r          : resume a previous session.  You must use the same command line as\n");
+  printf("                the previous session.\n");
+  printf("  -s          : allows you to specify the starting string, eg: 03god22fs\n");
+  printf("  -t [FIXED]@,%%^  : allows you to specify a pattern, eg: @@god@@@@\n");
+  printf("                where the only the @'s will change with lowercase letters\n");
+  printf("                the ,'s will change with uppercase letters\n");
+  printf("                the %%'s will change with numbers\n");
+  printf("                the ^'s will change with symbols\n");
+  printf("  -u          : The -u option disables the printpercentage thread.  This should be the last option.\n");
+  printf("  -z          : adds support to compress the generated output.  Must be used\n");
+  printf("                with -o option.  Only supports gzip, bzip, lzma, and 7z.\n  \n");
 }
 
 static wchar_t *resumesession(const char *fpath, const wchar_t *charset) {
@@ -2648,7 +2689,7 @@ pthread_t threads;
         memcpy(charsetfilename, argv[i+1], strlen(argv[i+1]));
         i += 2; /* skip -f and filename */
       }
-
+      int count = 0 ;
       if ((i < argc) && (argv[i] != NULL) && (*argv[i] != '-')) { /* lowercase */
         free(charset);
         charset = readcharsetfile(charsetfilename, argv[i], &saw_unicode_input);
@@ -2673,6 +2714,7 @@ pthread_t threads;
             wordarray[temp][1] = L'\0';
           }
           i++;
+          count++;
         }
 
 /* uppercase */
@@ -2686,6 +2728,7 @@ pthread_t threads;
             }
           }
           i++;
+          count++;
         }
 /* numbers */
         if (i < argc && argv[i]!=NULL && *argv[i] != '-') {
@@ -2698,6 +2741,7 @@ pthread_t threads;
             }
           }
           i++;
+          count++;
         }
 /* symbols */
         if (i < argc && argv[i]!=NULL && *argv[i] != '-') {
@@ -2710,7 +2754,7 @@ pthread_t threads;
             }
           }
         }
-        i -= 2; /* have to subtract 2 to continue processing parameter values */
+        i -= count; /* have to subtract 2 to continue processing parameter values */
       }
       else {
         fprintf(stderr,"Please specify a filename and character set\n");
